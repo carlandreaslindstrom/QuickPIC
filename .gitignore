@@ -1,0 +1,9 @@
+CONFIG.m
+
+outputs/
+figures/
+
+*.m~
+
+QuickJobs/tempfiles/rpinput
+QuickJobs/tempfiles/qpic.e.cmd

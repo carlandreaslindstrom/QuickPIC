@@ -1,0 +1,62 @@
+--------------laser_input ----------------------------
+&laser_input
+ laser_on = .%1$s.
+/
+
+--------------plasma species------------------------
+Nspecies: total number of plasma species 
+Plasma_Density: density for normalization,
+                in unit of cm-3
+                not necessarily density of one species
+----------------------------------------------------
+&Plasma
+ Nspecies = %2$s,
+ Nneutrals = %3$s,
+ Plasma_Density = %4$s
+/
+
+------------Plasma Parameters-------------------------
+LOAD_BALANCE_TH = threshold value for load balancing.
+NP2: NP2*NP2 is the number of simulation particles in 
+    one 2D slice.
+Charge = charge of plasma particle, in unit of e.
+Mass = mass of plasma particle, in unit of electron mass.
+VT2X(Y) = thermal velocity of the plasma electrons, in 
+    unit of c
+Non_Neutral_Factor = - fixed ion density/electron density,
+    Non_Neutral_Factor = 1 for neutral plasma
+    Non_Neutral_Factor = 0 for pure electron cloud
+    Effective only when conducting boundary condition
+    is set.
+Profile_type: 0 - uniform, density = 1 
+                  (nomalized to the Plasma_Density)
+              1 - linear, density = 1+p1*(x/p2-p3)
+              2 - sine, density = 1+p1*sin(x*p2-p3)
+              3 - gaussian, density = 1+p1*exp(-((x-p2)/p3)**2) 
+              18 - hollow channel, density = 0 (r<p1) or p2 (r>p1)
+              19 - circle, density = p2 (r<p1) or 0 (r>p1) 
+              20 - half space, density = 0 (right) or 1 (left)
+              21 - piecewise, density = n(r)
+              70 - finite hollow channel, density = 0 
+                   (r<p1 & r>p3) or p2 (r>p1 & r<p3)
+argx1/2/3: arguments for uniform, linear, sine, gaussian, hollow, 
+           circle, half space profiles.
+           uniform: argx1/2/3 not used.
+           linear:  p1=argx1, p2=argx2, p3=argx3
+           sine:  p1=argx1, p2=argx2, p3=argx3
+           gaussian:  p1=argx1, p2=argx2, p3=argx3
+           hollow/circle: p1=argx1 (micron), p2=argx2 
+           half: argx1/2/3 not used           
+Prof_Paras_Nsec = number of points in the piecewise function. Max=100
+Prof_Parameters(1,1:100): n(r) for piecewise profile, n(r>box/2) is 
+     forced to be 0.
+Prof_Parameters(2,1:100): r for piecewise profile, in micron
+Density_Variation: Allow density variation in s, which is 
+    the propagation distance.
+Density_Variation_Nsec: Number of sections of piece-wise 
+    linear function describing density variation, max=100.
+Density_Variation_Fs: values of piece-wise linear function. 
+    These are the density ratios with respect to Plasma_Density. 
+Density_Variation_s: corresponding propagation distances (in 
+    micron).
+------------------------------------------------------

@@ -1,0 +1,145 @@
+------------Simulation time---------------------------
+TEND = Total time, DT = TimeStep 
+In unit of 1/Omega_p.
+------------------------------------------------------
+&Simulation_time
+ TEND = %1$s, 
+ DT = %2$s
+/ 
+
+------------ Diagnostic ------------------------------
+DFPSI, DFPHI, DFQEB, DFQEP, DFVP, DFCHI, DFJP, DFJB, 
+DFE, DFB  are the intervals in unit 
+of timestep to output PSI, PHI, beam and plasma 
+density, ponderomotive potential, CHI, plasma current,
+beam current, E field and B field respectively.
+DF*SLICE specify the interval for outputing 2D slices
+of the data.
+PHI(PSI,QEB,QEP)X0, if not zero, specify which Y-Z 
+slice to dump. 
+PHI(PSI,QEB,QEP)Y0, if not zero, specify which X-Z 
+slice to dump.
+PHI(PSI,QEB,QEP)Z0, if not zero, specify which X-Y 
+slice to dump.
+BC_DIAG_RES specify the number of slices along Z 
+direction for beam centroid calculation.
+------------------------------------------------------
+&Potential_Diag
+ DFPHI = %3$s,
+ DFPHISLICE = %4$s, 
+ PHIX0 = %5$s,
+ PHIY0 = %6$s,
+ PHIZ0 = %7$s,
+ DFPSI = %8$s, 
+ DFPSISLICE = %9$s, 
+ PSIX0 = %10$s,
+ PSIY0 = %11$s,
+ PSIZ0 = %12$s
+/
+
+&Ponderomotive_Potential_Diag
+ DFVP = %13$s,
+ DFVPSLICE = %14$s, 
+ VPX0 = %15$s, 
+ VPY0 = %16$s, 
+ VPZ0 = %17$s
+/
+
+&Chi_Diag
+ DFCHI = %18$s,
+ DFCHISLICE = %19$s, 
+ CHIX0 = %20$s, 
+ CHIY0 = %21$s, 
+ CHIZ0 = %22$s
+/
+
+&Current_Diag
+ DFJP = %23$s, 
+ DFJPSLICE = %24$s, 
+ JPX0 = %25$s, 
+ JPY0 = %26$s, 
+ JPZ0 = %27$s,
+ DFJB = %28$s, 
+ DFJBSLICE = %29$s, 
+ JBX0 = %30$s, 
+ JBY0 = %31$s, 
+ JBZ0 = %32$s
+/
+
+&Field_Diag
+ DFE = %33$s, 
+ DFESLICE = %34$s, 
+ EX0 = %35$s, 
+ EY0 = %36$s, 
+ EZ0 = %37$s,
+ DFB = %38$s, 
+ DFBSLICE = %39$s, 
+ BX0 = %40$s, 
+ BY0 = %41$s, 
+ BZ0 = %42$s
+/
+
+&Beam_Diag
+ DFQEB = %43$s, 
+ DFQEBSLICE = %44$s,
+ QEBX0 = %45$s,
+ QEBY0 = %46$s,
+ QEBZ0 = %47$s,
+ DFBC = %48$s,
+ BC_DIAG_RES = %49$s
+/
+
+&Plasma_Diag
+ DFQEP = %50$s, 
+ DFQEPSLICE = %51$s,
+ QEPX0 = %52$s,
+ QEPY0 = %53$s,
+ QEPZ0 = %54$s
+/
+
+------------ Diagnostic ------------------------------
+ DUMP_PHA: switch to turn on phase space diagnostics
+ DFPHA:  intevals in unit of timestep for dumping phase
+ space
+ DSAMPLE :  spacing of sampling
+------------------------------------------------------
+&Beam_Phase_Space_Diag
+ DUMP_PHA_BEAM = .%55$s., 
+ DFPHA_BEAM = %56$s, 
+ DSAMPLE_BEAM = %57$s
+/
+
+&Plasma_Phase_Space_Diag
+ DUMP_PHA_PLASMA = .%58$s.,
+ DFPHA_PLASMA = %59$s,
+ DSAMPLE_PLASMA = %60$s
+/
+
+------------ Restart file ----------------------------
+READ_RST_FILE specify a restart run and  RST_TIMESTEP 
+which timestep to begin the restart run
+DUMP_RST_FILE control restart file dumping and DFRST
+is the dumping frequency
+------------------------------------------------------
+&Restart_File
+ READ_RST_FILE = .%61$s., 
+ RST_TIMESTEP = %62$s,
+ DUMP_RST_FILE = .%63$s.,
+ DFRST = %64$s
+/
+
+------------Optimization Coefficents----------------
+INTERNAL DATA. DO NOT CHANGE!
+------------------------------------------------------
+&Optimization
+ INORDER = 1, POPT = 1, DOPT = 2, DJOPT = 1 
+ SORTIME_2D = 25, SORTIME_3D = 25
+/
+
+------------Debug-------------------------------------
+Debug options
+------------------------------------------------------
+&debug
+ MAX_ITER = 2, FAC_EXY = 1., FAC_BXY = 1., FAC_AZ = 1, 
+ FAC_BZ = 1, C_DIF = 1 , J_DIF = 1, VERBOSE = 1 
+/

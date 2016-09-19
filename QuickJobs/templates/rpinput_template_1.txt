@@ -1,0 +1,112 @@
+---------------QuickPIC Input-------------------------
+------------------------------------------------------
+&Input_File
+ Version = 032011 
+/
+
+--------------Pipeline Processing---------------------
+Number of stages in the pipeline
+------------------------------------------------------
+&Pipeline
+ Num_Stages = %1$s
+/
+
+--------------Simulation System-----------------------
+Simulation system (in unit of micron) = BOX_X * BOX_Y
+ * BOX_Z
+Total grids = (2^INDX) * (2^INDY) * (2^INDZ)
+Total beam particles = NPX * NPY * NPZ
+------------------------------------------------------
+&Simulation_Sys
+ Box_X = %2$s, 
+ Box_Y = %3$s, 
+ Box_Z = %4$s,
+ INDX = %5$s, 
+ INDY = %6$s, 
+ INDZ = %7$s 
+/
+
+--------------Boundary Condition----------------------
+Choose between 'periodic' and 'conducting'.
+------------------------------------------------------
+&Boundary
+ SBoundary = '%8$s'
+/
+
+-------------- Beams ---------------------------------
+NBeams = number of beams
+------------------------------------------------------
+&Num_Beams 
+ NBeams = %9$s
+/
+
+-------------Beam Parameters--------------------------
+BEAM_EVOLUTION : turn on/off beam push
+MIN_BEAM_PARTICLE=minimal number of beam particles in 
+each processor.
+NPX, NPY, NPZ : NPX*NPY*NPZ is the total number of 
+particles for this beam 
+Charge = charge of beam particle, in unit of e.
+Mass = mass of beam particle, in unit of electron mass. 
+GAMMA = lorentz factor
+Num_Particle = Number of beam particle.
+VDX(Y&Z) = drift velocity of the beam, in unit of c
+Init_Routine : specify which init routine to use.
+             1 :  tri-gaussian random initializtion
+             2 :  bi-gaussian in x and y, piecewise 
+                  linear in z
+             3 :  bi-gaussian in x and y, piecewise 
+                  linear in z, random initialization
+             4 :  arbitrary 3D profile specified by 
+                  the BEAM_PROFILE file, parameter 
+                  array is ignored. 
+             5 : twiss parameter initialization for 
+                 transverse phase space, gaussian for 
+                 longitudinal profile.
+Parameter_Array = parameters for the init routine.
+Parameter_Array(1,:) = (Center_X,Center_Y,Center_Z) 
+                 = Position of the center of the beam
+Parameter_Array(2,:) =
+  Init_Routine=1 :  (Sigma_X, Sigma_Y, Sigma_Z)
+                        Sigma_X(Y) in micron 
+  Init_Routine=2,3 : (Sigma_X, Sigma_Y, Size_of_Profile_Array)
+                     Maximum size = 500
+  Init_Routine=5 : (Alpha_X, Beta_X, Alpha_Y, Beta_Y, Sigma_Z)
+Parameter_Array(3,:) =
+  Init_Routine=1,5 : (EMITTANCE_X, EMITTANCE_Y, ENERGY_DIFF)  
+                   Normalized emittance of the beam in unit of 
+                   mm*mrad, thermal velocity of the beam = 
+                   emittance/(gamma*sigma)
+                   ENERGY_DIFF = DELTA_GAMMA/GAMMA, logitudinal 
+                   thermal velocity of the beam is ENERGY_DIFF/GAMMA
+  Init_Routine=2,3: (EMITTANCE_X, EMITTANCE_Y, ENERGY_DIFF,
+                   Centroid_C2X,Centroid_C1X,Centroid_C0X,Centroid_C2Y,
+                   Centroid_C1Y,Centroid_C0Y)
+                   Beam centroid is described by parabolic function
+                   Centroid_C2*(Z-Z0)^2+Centroid_C1*(Z-Z0)+Centroid_C0
+                   Here Z and Z0 are in unit of micron, the code wil 
+                   convert Centroid_C2(1&0) into the unit in the
+                   slmulation.
+Parameter_Array(4,:) = 
+   Init_Routine=1 : (Centroid_C2X,Centroid_C1X,Centroid_C0X)
+   Init_Routine=2,3 : f(x(i)) in beam profile, arb. unit
+   Init_Routine=5 : not used 
+Parameter_Array(5,:) =
+   Init_Routine=1 : (Centroid_C2Y,Centroid_C1Y,Centroid_C0Y)
+   Init_Routine=2,3 : x(i) in beam profile, in micron 
+   Init_Routine=5 : not used 
+Use_Shifter = Shift particles' transverse position after 
+   initialization
+Shifter_Nsec = number of sections of the displacements
+Shifter_Parameter(1,:) = displacement in x direction
+Shifter_Parameter(2,:) = displacement in y direction
+Shifter_Parameter(3,:) = z position of each section
+Use_Destroyer = particle destroyer
+Destroyer_NCriteria = number of criteria
+Destroyer_Criteria(1,:) = dimension to operate on
+   (1:X, 2:Y, 3:Z, 4:Px, 5:Py, 6:Pz)
+Destroyer_Criteria(2,:) = lower bound
+Destroyer_Criteria(3,:) = upper bound
+   units are in micron(for XYZ) or mc(for Px,Py,Pz)
+   inbound particles will be destroyed!
+------------------------------------------------------
