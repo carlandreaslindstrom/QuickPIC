@@ -1,41 +1,39 @@
-function [ output ] = expProf(rmax, r1, sigr, npoints, isarb)
+function [ output ] = expProf(rInner, rOuter, rBox, sigr, npoints)
+   
+    % 'arb' rules:
+    % 1. nothing less some threshold (between 4e-5 and 1e-9)?
+    % 2. end at the box radius
+    % 3. equal spacing
     
-    % set up plasma profile
-    rs = linspace(0, rmax, npoints+1);
-    ns = min(1, exp(-(r1-rs)/sigr));
+    %thresh = 1e-4;
+    rs = linspace(0, rBox, npoints);
+    ns = min(1, exp(-(rInner-rs)/sigr));
+    %ns(rs>=rOuter) = 0;
     
-    % apply threshold
-    thresh = 0.01;
-    ns(ns<thresh) = 0;
+    % fix low densities
+    %ns(ns<=thresh) = thresh;
+    
+    % set up plasma profile (points better distributed)
+    %{
+    rs = linspace(0, rInner, npoints-3);
+    ns = min(1, exp(-(rInner-rs)/sigr));
+    rs = [rs, rOuter-(rs(2)-rs(1))/2, rOuter+(rs(2)-rs(1))/2, rBox];
+    ns = [ns, 1, 1e-9, 1e-9];
+    %}
     
     % plot it
     visu = true;
     if visu
+        figure(100);
         set(gcf, 'color','w');
-        bar(rs, ns,1);
+        plot(rs, ns,'-o');
         axis tight;
         xlabel('r [\mum]'); ylabel('n / n_0');
         title('Radial plasma profile');
     end
     
-    % convert to 'arb' profile
-    arb = {{'arb', [rs' , ns']}};
-    
-    % convert to multi-species
-    species = cell(1,npoints);
-    for i = 1:npoints
-        if i == 1 % innermost is a cylinder, not a hollow channel
-            species{i} = {'cyl', [rs(i+1), ns(i)]};
-        else
-            species{i} = {'hc', [rs(i), rs(i+1), ns(i)]};
-        end
-    end
-    
-    if exist('isarb','var') && isarb
-        output = arb;
-    else
-        output = species;
-    end
+    % give it back to the people
+    output = {{'arb', [rs' , ns']}};
     
 end
 

@@ -21,15 +21,13 @@ function [] = submitJob(project, simname, timelimit, tasks, RAM)
     projfolder = [qpfolder '/' project];
     binfolder = CONFIG('binfolder');
     
-    
     % make the project folder if it does not exist
-    fprintf('Project folder exists already: ');
     existcmd = ['if [ -d ' projfolder ' ]; then echo ''1''; else echo ''0''; fi;'];
-    [~, output] = sshfrommatlabissue(chnl, existcmd);
+    output = evalc('sshfrommatlabissue(chnl, existcmd);');
     if ~str2double(output) % project does not exist: make it
+        disp('Project does not exist yet.');
         sshfrommatlabissue(chnl, ['mkdir ' projfolder]);
     end
-    disp(' ');
     
     % find existing simulations (to avoid overwriting)
     disp('Project folder: ');

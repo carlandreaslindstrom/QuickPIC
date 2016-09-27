@@ -1,19 +1,14 @@
-function [data, exitflag] = h5read( filename )
+function [data] = h5read( filename )
 
     % READS h5 FILES
-    % Based on script by Erik Adli
-    
-    char_slash = findstr(filename, '/');
-    char_dot = findstr(filename, '.');
-    dataname = filename(char_slash(end):char_dot(end)-1);
-    dataname( dataname == '_' ) = '-'; % for some reason QuickPIC has slightly different filename than dataname
-
     try
+        char_slash = [1 strfind(filename, '/')];
+        char_dot = strfind(filename, '.');
+        dataname = filename(char_slash(end):char_dot(end)-1);
+        dataname( dataname == '_' ) = '-'; % QuickPIC requires different dataname than filename
         data = hdf5read(filename, dataname);
-        exitflag = true;
     catch
-        data = [];
-        exitflag = false;
+        data = false;
     end
 
 end

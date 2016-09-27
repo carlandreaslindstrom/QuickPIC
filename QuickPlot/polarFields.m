@@ -12,20 +12,20 @@ function [E, B, F] = polarFields(xs, ys, E, B)
         sin_XY = YY./RR_XY;
 
         % E-fields (must be transposed to work)
-        E.R.XY = E.X.XY'.*cos_XY + E.Y.XY'.*sin_XY;
-        E.TH.XY = - E.X.XY'.*sin_XY + E.Y.XY'.*cos_XY;
+        E.R.XY = (E.X.XY'.*cos_XY + E.Y.XY'.*sin_XY)';
+        E.TH.XY = (- E.X.XY'.*sin_XY + E.Y.XY'.*cos_XY)';
 
         % B-fields
-        B.R.XY = B.X.XY'.*cos_XY + B.Y.XY'.*sin_XY;
-        B.TH.XY = - B.X.XY'.*sin_XY + B.Y.XY'.*cos_XY;
+        B.R.XY = (B.X.XY'.*cos_XY + B.Y.XY'.*sin_XY)';
+        B.TH.XY = (- B.X.XY'.*sin_XY + B.Y.XY'.*cos_XY)';
 
         % x/y forces
         F.X.XY = E.X.XY' - B.Y.XY';
         F.Y.XY = E.Y.XY' + B.X.XY';
 
         % radial/azimuthal forces
-        F.R.XY = F.X.XY.*cos_XY + F.Y.XY.*sin_XY;
-        F.TH.XY = -F.X.XY.*sin_XY + F.Y.XY.*cos_XY;
+        F.R.XY = (F.X.XY.*cos_XY + F.Y.XY.*sin_XY)';
+        F.TH.XY = (-F.X.XY.*sin_XY + F.Y.XY.*cos_XY)';
 
     end
     

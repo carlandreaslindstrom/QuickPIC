@@ -8,8 +8,14 @@ function rp = rpinputParser(project, sim)
     
     % read file into a cell array
     outputfolder = CONFIG('outputs');
-    fileID = fopen([outputfolder '/' project '/' sim '/rpinput'],'r');
-    a = textscan(fileID,'%s',10000,'Delimiter','\n');
+    filename = [outputfolder '/' project '/' sim '/rpinput'];
+    %fileID = fopen(filename,'r');
+    %a = textscan(fileID,'%s',10000,'Delimiter','\n');
+    
+    clean0 = fileread(filename); % read text file into character array
+    clean1 = regexprep(clean0, ',[\s]{0,}([A-Z]+)',',\n $1'); % insert appropriate newlines
+    %clean2 = regexprep(b, '[\s]{0,}=[\s]{0,}',' = '); % fix ugly equal signs (not important)
+    a = textscan(clean1,'%s',10000,'Delimiter','\n');
     carr = a{1};
     
     % getting indices of a certain class
@@ -102,18 +108,22 @@ function rp = rpinputParser(project, sim)
     rp.sim.dist.step = rp.sim.time.step * k_p;
     
     % DUMP (assuming all slice frequencies are equal, basing on E-field only)
-    rp.dump.slice.freq = max([params2list('&Field_Diag','DFESLICE'), params2list('&Beam_Diag','DFQEBSLICE'), params2list('&Plasma_Diag','DFQEPSLICE')]);
-    rp.dump.slice.x = params2list('&Field_Diag','EX0');
-    rp.dump.slice.y = params2list('&Field_Diag','EY0');
-    rp.dump.slice.z = params2list('&Field_Diag','EZ0');
-    rp.dump.slice.fields = params2list('&Field_Diag','DFESLICE') == 0;
-    rp.dump.slice.beams = params2list('&Beam_Diag','DFQEBSLICE') == 0;
-    rp.dump.slice.plasmas = params2list('&Plasma_Diag','DFQEPSLICE') == 0;
-    rp.dump.phase.beams = params2bool('&Beam_Phase_Space_Diag','DUMP_PHA_BEAM');
-    rp.dump.phase.plasmas = params2bool('&Plasma_Phase_Space_Diag','DUMP_PHA_PLASMA');
-    rp.dump.freq = max([params2list('&Plasma_Phase_Space_Diag','DFPHA_PLASMA'), params2bool('&Beam_Phase_Space_Diag','DFPHA_BEAM')]);
-    rp.dump.sample.beam = params2list('&Beam_Phase_Space_Diag','DSAMPLE_BEAM');
-    rp.dump.sample.plasmas = params2list('&Plasma_Phase_Space_Diag','DSAMPLE_PLASMA');
+    rp.dump.slice.field.freq = params2list('&Field_Diag','DFESLICE'); % assuming DFBSLICE is the same
+    rp.dump.slice.field.x = params2list('&Field_Diag','EX0');
+    rp.dump.slice.field.y = params2list('&Field_Diag','EY0');
+    rp.dump.slice.field.z = params2list('&Field_Diag','EZ0');
+    rp.dump.slice.beam.freq = params2list('&Beam_Diag','DFQEBSLICE');
+    rp.dump.slice.beam.x = params2list('&Beam_Diag','QEBX0');
+    rp.dump.slice.beam.y = params2list('&Beam_Diag','QEBY0');
+    rp.dump.slice.beam.z = params2list('&Beam_Diag','QEBZ0');
+    rp.dump.slice.plasma.freq = params2list('&Plasma_Diag','DFQEPSLICE');
+    rp.dump.slice.plasma.x = params2list('&Plasma_Diag','QEPX0');
+    rp.dump.slice.plasma.y = params2list('&Plasma_Diag','QEPY0');
+    rp.dump.slice.plasma.z = params2list('&Plasma_Diag','QEPZ0');
+    rp.dump.phase.beam.freq = params2list('&Beam_Phase_Space_Diag','DFPHA_BEAM')*params2bool('&Beam_Phase_Space_Diag','DUMP_PHA_BEAM');
+    rp.dump.phase.beam.sample = params2list('&Beam_Phase_Space_Diag','DSAMPLE_BEAM');
+    rp.dump.phase.plasma.freq = params2list('&Plasma_Phase_Space_Diag','DFPHA_PLASMA')*params2bool('&Plasma_Phase_Space_Diag','DUMP_PHA_PLASMA');
+    rp.dump.phase.plasma.sample = params2list('&Plasma_Phase_Space_Diag','DSAMPLE_PLASMA');
     
     % LASER
     rp.laser = params2bool('&laser_input', 'laser_on');

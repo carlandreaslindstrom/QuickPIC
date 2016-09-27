@@ -32,16 +32,17 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
     % ress = [resx, resy, resz]
     % NOTE: resolutions ress = [512, 512, 512] by default
     
-    % dumps = {{sliceFreq, [x,y,z], [sliceFields, sliceBeams, slicePlasmas]}, {phaseFreq, [phaseSpaceBeams, phaseSpacePlasmas], [samplingBeams, samplingPlasmas]}}
-    % NOTE: sliceFreq = 1 [units of timestep] by default (every step)
+    % dumps = {slice, phasespace}
+    %       slice = {freq, [x y z]}
+    %               {{fieldFreq, [x y z]}, {beamFreq, [x y z]}, {plasmaFreq, [x y z]}}
+    %       phasespace = {freq, sample}
+    %                    {{beamFreq, beamSample}, {plasmaFreq, plasmaSample}}            
+    % NOTE: [freq, fieldFreq, beamFreq, plasmaFreq] = 1 [units of timestep] by default
     % NOTE: [x,y,z] = (center, center, first beam's z-centroid) by default
-    % NOTE: [sliceFields, sliceBeams, slicePlasmas] = true by default
-    % NOTE: phaseSpaceFreq = 0 [units of timestep] by default (off)
-    % NOTE: [phaseSpaceBeams, phaseSpacePlasmas] = false by default
-    % NOTE: [samplingBeams, samplingPlasmas] = 128 by default (sparse sampling)
-    
+    % NOTE: [freq, beamFreq, plasmaFreq] = 0 by default
+    % NOTE: [sample, beamSample, plasmaSample] = 128 by default (sparse sampling rate)
     % EXAMPLES:
-    % rp = rpinputMaker({{20.35,2.5e9,'e+',[10 10],{'tri',[20,20,35]}}},3e16,{{'uni'},{'hc',[200,260,0.5]}},0.0126,10,[700 700 500],{{10}});
+    % rp = rpinputMaker({{20.35,2.5e9,'e+',[10 10],{'tri',[20,20,35]}}},3e16,{{'uni'},{'hc',[200,260,0.5]}},0.0126,10,[700 700 500],{10});
     
     
     %% GUIDE if no arguments
@@ -57,8 +58,9 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         disp('           {''cyl'', [r1 n], [s n], res}');
         disp('           {''arb'', [r n], [s n], res}');
         disp('dumps = {slice, phasespace}');
-        disp('         slice = {freq, [x y z], [fields? beams? plasmas?]})');
-        disp('    phasespace = {freq, [beams? plasmas?], [beamSampling plasmaSampling})');
+        disp('         slice = {freq [x y z]}');
+        disp('                 {{fieldFreq [x y z]}, {beamFreq [x y z]}, {plasmaFreq [x y z]}}');
+        disp('    phasespace = {{beamFreq beamSample}, {plasmaFreq plasmaSample})');
         return;
     end
     
@@ -293,45 +295,81 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
     
     %% PARSE DUMPS
     % slice dumps
-    if exist('dumps','var') && numel(dumps{1})>1 % slice definitions
-        rp.dump.slice = struct('x',dumps{1}{2}(1),'y',dumps{1}{2}(2),'z',dumps{1}{2}(3)); % [um] from center and front
+    slices = struct('freq',1,'x',0,'y',0,'z',rp.beam{1}.offset.z); % default slice
+    if exist('dumps','var') && numel(dumps)>=1 && ~isempty(dumps{1})
+        if iscell(dumps{1}{1}) % individual slice definitions
+            indSlices = {slices, slices, slices}; % [field, beam, plasma]
+            for i = 1:numel(indSlices)
+                if numel(dumps{1})>=i % does it exist?
+                    if numel(dumps{1}{i})>=1 % dump frequency
+                        indSlices{i}.freq = dumps{1}{i}{1};
+                    end
+                    if numel(dumps{1}{i})>=2 % dump slice planes
+                        indSlices{i}.x = dumps{1}{i}{2}(1);
+                        indSlices{i}.y = dumps{1}{i}{2}(2);
+                        indSlices{i}.z = dumps{1}{i}{2}(3);
+                    end
+                end
+            end
+            [rp.dump.slice.field, rp.dump.slice.beam, rp.dump.slice.plasma] = deal(indSlices{1}, indSlices{2}, indSlices{3});
+        else % common slice definition
+            if numel(dumps{1})>=1 % common dump frequency
+                slices.freq = dumps{1}{1};
+            end
+            if numel(dumps{1})>=2 % common dump slice planes
+                slices.x = dumps{1}{2}(1);
+                slices.y = dumps{1}{2}(2);
+                slices.z = dumps{1}{2}(3);
+            end
+            [rp.dump.slice.field, rp.dump.slice.beam, rp.dump.slice.plasma] = deal(slices);
+        end
     else
-        rp.dump.slice = struct('x',0,'y',0,'z',rp.beam{1}.offset.z); % [um] from center and front : default
+        [rp.dump.slice.field, rp.dump.slice.beam, rp.dump.slice.plasma] = deal(slices);
     end
-    if exist('dumps','var') && numel(dumps{1})>0 % frequency
-        rp.dump.slice.freq = dumps{1}{1}; % [unit of time step] frequency
+    % phase space dumps
+    phases = struct('freq',0,'sample',128); % default
+    if exist('dumps','var') && numel(dumps)>=2 && ~isempty(dumps{2})
+        if iscell(dumps{2}{1}) % individual slice definitions
+            indPhases = {phases, phases}; % [field, beam, plasma]
+            for i = 1:numel(indPhases)
+                if numel(dumps{2})>=i % does it exist?
+                    if numel(dumps{2}{i})>=1 % dump frequency
+                        indPhases{i}.freq = dumps{2}{i}{1};
+                    end
+                    if numel(dumps{2}{i})>=2 % dump slice planes
+                        indPhases{i}.sample = dumps{2}{i}{2};
+                    end
+                end
+            end
+            [rp.dump.phase.beam, rp.dump.phase.plasma] = deal(indPhases{1}, indPhases{2});
+        else % common phase space definition
+            if numel(dumps{2})>=1 % common dump frequency
+                phases.freq = dumps{2}{1};
+            end
+            if numel(dumps{2})>=2 % common dump sample
+                phases.sample = dumps{2}{2};
+            end
+            [rp.dump.phase.beam, rp.dump.phase.plasma] = deal(phases);
+        end
     else
-        rp.dump.slice.freq = 1; % default: 1
+        [rp.dump.phase.beam, rp.dump.phase.plasma] = deal(phases);
     end
-    if exist('dumps','var') && numel(dumps{1})>2 % what to slice dump
-        [rp.dump.slice.fields, rp.dump.slice.beams, rp.dump.slice.plasmas] = deal(dumps{1}{3}(1), dumps{1}{3}(2), dumps{1}{3}(3));
-    else
-        [rp.dump.slice.fields, rp.dump.slice.beams, rp.dump.slice.plasmas] = deal(true); % default: true
-    end
-    % phase space dumps (much heavier)
-    if exist('dumps','var') && numel(dumps)>1 && numel(dumps{2})>0 % frequency
-        rp.dump.phase.freq = dumps{2}{1}; % [unit of time step]
-    else
-        rp.dump.phase.freq = 0; % default: 0
-    end
-    if exist('dumps','var') && numel(dumps)>1 && numel(dumps{2})>1 % what to dump
-        [rp.dump.phase.beams, rp.dump.phase.plasmas] = deal(dumps{2}{2}(1), dumps{2}{2}(2));
-    else
-        [rp.dump.phase.beams, rp.dump.phase.plasmas] = deal(false); % default: true
-    end
-    if exist('dumps','var') && numel(dumps)>1 && numel(dumps{2})>2 % dump sampling
-        [rp.dump.sample.beams, rp.dump.sample.plasmas] = deal(dumps{2}{3}(1), dumps{2}{3}(2));
-    else
-        [rp.dump.sample.beams, rp.dump.sample.plasmas] = deal(128); % default: 128 down sampling
-    end
-    
+	
     % print info
+    function n = numDumps(freq) 
+        if freq == 0; n = 0; else n = floor(Nsteps/freq); end
+    end
     disp('DUMPS');
-    fprintf('> Slices: every %d step(s) = %d dump(s) total, \n', rp.dump.slice.freq, floor(Nsteps/rp.dump.slice.freq));
-    fprintf('  planes = (%1.f, %1.f, %1.f) um from centre and front, \n', rp.dump.slice.x, rp.dump.slice.y, rp.dump.slice.z);
-    fprintf('  fields = %s, beams = %s, plasmas = %s \n', bool2str(rp.dump.slice.fields), bool2str(rp.dump.slice.beams), bool2str(rp.dump.slice.plasmas));
-    fprintf('> Phase space: every %d step(s), \n', rp.dump.phase.freq);
-    fprintf('  beams = %s, plasmas = %s \n', bool2str(rp.dump.phase.beams), bool2str(rp.dump.phase.plasmas));
+    fprintf('> Field slices: every %d step(s) = %d dump(s), ', rp.dump.slice.field.freq, numDumps(rp.dump.slice.field.freq));
+    fprintf('at (%1.f, %1.f, %1.f) um\n', rp.dump.slice.field.x, rp.dump.slice.field.y, rp.dump.slice.field.z);
+    fprintf('> Beam slices: every %d step(s) = %d dump(s), ', rp.dump.slice.beam.freq, numDumps(rp.dump.slice.beam.freq));
+    fprintf('at (%1.f, %1.f, %1.f) um\n', rp.dump.slice.beam.x, rp.dump.slice.beam.y, rp.dump.slice.beam.z);
+    fprintf('> Plasma slices: every %d step(s) = %d dump(s), ', rp.dump.slice.plasma.freq, numDumps(rp.dump.slice.plasma.freq));
+    fprintf('at (%1.f, %1.f, %1.f) um\n', rp.dump.slice.plasma.x, rp.dump.slice.plasma.y, rp.dump.slice.plasma.z);
+    fprintf('> Beam phase space: every %d step(s) = %d dump(s), ', rp.dump.phase.beam.freq, numDumps(rp.dump.phase.beam.freq));
+    fprintf('1/%1.f of the particles\n', rp.dump.phase.beam.sample);
+    fprintf('> Plasma phase space: every %d step(s) = %d dump(s), ', rp.dump.phase.plasma.freq, numDumps(rp.dump.phase.plasma.freq));
+    fprintf('1/%1.f of the particles\n', rp.dump.phase.plasma.sample);
     
     
     %% LASER (off)
@@ -504,27 +542,27 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
     t{2} = rp.sim.time.step; % [1/omega_p] time step
     
     t{33} = 0; % full E-field dump freq
-    t{34} = rp.dump.slice.freq * rp.dump.slice.fields; % E-field slice freq
-    t(35:37) = {rp.sim.dim.x/2+rp.dump.slice.x, rp.sim.dim.y/2+rp.dump.slice.y, rp.dump.slice.z}; % E-field slice
+    t{34} = rp.dump.slice.field.freq; % E-field slice freq
+    t(35:37) = {rp.sim.dim.x/2+rp.dump.slice.field.x, rp.sim.dim.y/2+rp.dump.slice.field.y, rp.dump.slice.field.z}; % E-field slice
     t{38} = 0; % full B-field dump freq
     t{39} = t{34}; % B-field slice freq
     t(40:42) = t(35:37); % B-field slice
     
     t{43} = 0; % full beam density dump freq
-    t{44} = rp.dump.slice.freq * rp.dump.slice.beams; % beam density slice freq
-    t(45:47) = t(35:37); % beam density slice
+    t{44} = rp.dump.slice.beam.freq; % beam density slice freq
+    t(45:47) = {rp.sim.dim.x/2+rp.dump.slice.beam.x, rp.sim.dim.y/2+rp.dump.slice.beam.y, rp.dump.slice.beam.z}; % beam density slice
     
     t{50} = 0; % full plasma density dump freq
-    t{51} = rp.dump.slice.freq * rp.dump.slice.plasmas; % plasma density slice freq
-    t(52:54) = t(35:37); % plasma density slice
+    t{51} = rp.dump.slice.plasma.freq; % plasma density slice freq
+    t(52:54) = {rp.sim.dim.x/2+rp.dump.slice.plasma.x, rp.sim.dim.y/2+rp.dump.slice.plasma.y, rp.dump.slice.plasma.z}; % plasma density slice
     
-    t{55} = bool2str(rp.dump.phase.beams); % beam phase space dump?
-    t{56} = rp.dump.phase.freq; % beam phase space freq
-    t{57} = rp.dump.sample.plasmas; % beam phase space sampling rate
+    t{55} = bool2str(rp.dump.phase.beam.freq>0); % beam phase space dump?
+    t{56} = rp.dump.phase.beam.freq; % beam phase space freq
+    t{57} = rp.dump.phase.beam.sample; % beam phase space sampling rate
     
-    t{58} = bool2str(rp.dump.phase.plasmas); % plasma phase space dump?
-    t{59} = t{56}; % plasma phase space freq
-    t{60} = rp.dump.sample.plasmas; % plasma phase space sampling rate
+    t{58} = bool2str(rp.dump.phase.plasma.freq>0); % plasma phase space dump?
+    t{59} = rp.dump.phase.plasma.freq; % plasma phase space freq
+    t{60} = rp.dump.phase.plasma.sample; % plasma phase space sampling rate
     
     % rarely changed:
     t(3:12) = {0}; % potential diagnostics
