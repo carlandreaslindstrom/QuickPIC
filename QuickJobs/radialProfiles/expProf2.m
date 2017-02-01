@@ -1,7 +1,7 @@
-function [ output ] = expProf(rInner, rOuter, rBox, sigr, npoints)
+function [ output ] = expProf2(rInner, rOuter, rBox, sigr, npoints)
    
     % MAKES HOLLOW CHANNEL WITH EXPONENTIAL FALL-OFF WALLS
-    % Version 1
+    % Version 2
     
     % general 'arb' r-profile rules:
     % 1. nothing less some threshold (about 1e-4)
@@ -13,7 +13,7 @@ function [ output ] = expProf(rInner, rOuter, rBox, sigr, npoints)
     thresh = 5e-4;
     rMin = max(rInner + sigr*log(thresh),0);
     rs = linspace(rMin, rBox, npoints);
-    ns = min(1, exp(-(rInner-rs)/sigr));
+    ns = max(thresh,min(min(1, exp(-(rInner-rs)/sigr)),exp((rOuter-rs)/sigr)));
     
     % plot it
     visu = true;

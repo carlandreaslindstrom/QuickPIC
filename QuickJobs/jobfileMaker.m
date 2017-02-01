@@ -1,4 +1,4 @@
-function filepath = jobfileMaker(project, simname, timelimit, tasks, totalRAM) % time in hours, RAM in GB
+function filepath = jobfileMaker(project, simname, timelimit, tasks, totalRAM, highp) % time in hours, RAM in GB
     
     % add path to CONFIG file
     addpath('../');
@@ -8,6 +8,7 @@ function filepath = jobfileMaker(project, simname, timelimit, tasks, totalRAM) %
     % defaults
     if ~exist('tasks','var'); tasks = 128; end
     if ~exist('totalRAM','var'); totalRAM = 64; end % [GB] default: 0.5 GB per node
+    if ~exist('highp','var'); highp = false; end
     
     % extract RAM per node (rounded to nearest MB)
     RAM = round(totalRAM*1024/tasks); % [MB] 
@@ -27,7 +28,11 @@ function filepath = jobfileMaker(project, simname, timelimit, tasks, totalRAM) %
     tasks = num2str(tasks);
     
     % get template to fill in
-    template = fileread([templatesfolder '/jobtemplate.txt']);
+    if highp
+        template = fileread([templatesfolder '/jobtemplate_highp.txt']);
+    else
+        template = fileread([templatesfolder '/jobtemplate.txt']);
+    end
     
     % fill in template
     filepath = [tempfilesfolder '/qpic.e.cmd'];

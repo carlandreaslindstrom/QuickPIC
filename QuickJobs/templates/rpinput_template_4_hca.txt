@@ -1,0 +1,24 @@
+&Species
+ LOAD_BALANCE_TH = %1$s,
+ NP2 = %2$s,
+ Charge = %3$s,
+ Mass = %4$s,
+ VT2X = %5$s, 
+ VT2Y = %6$s,
+ Non_Neutral_Factor = %7$s,
+ Profile_type = %8$s,
+ argx1 = %9$s,
+ argx2 = %10$s,
+ argx3 = %11$s,
+ argx4 = %20$s,
+ argx5 = %21$s,
+ nsrand = %12$s,
+ Prof_Nsec = %13$s,
+ Prof_Parameter(1,1:%13$s) = %14$s,
+ Prof_Parameter(2,1:%13$s) = %15$s,
+ Density_Variation = .%16$s.,
+ Density_Variation_Nsec = %17$s,
+ Density_Variation_Fs(1:%17$s) = %18$s,
+ Density_Variation_s(1:%17$s) = %19$s
+/
+

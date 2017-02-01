@@ -1,4 +1,4 @@
-function rp = rpinputParser(project, sim)
+function rp = rpinputParser(project, sim, tempfile)
 
     % Convert a job parameter input file (rpinput) to a usable structure (rp)
     % Author: Carl A. Lindstrom (Uni. Oslo, 5.9.2016)
@@ -7,10 +7,14 @@ function rp = rpinputParser(project, sim)
     addpath('..');
     
     % read file into a cell array
-    outputfolder = CONFIG('outputs');
-    filename = [outputfolder '/' project '/' sim '/rpinput'];
-    %fileID = fopen(filename,'r');
-    %a = textscan(fileID,'%s',10000,'Delimiter','\n');
+    if exist('tempfile','var') && ~~tempfile
+        % read the tempfile
+        filename = [CONFIG('qjobsfolder') '/tempfiles/rpinput'];
+    else
+        % read another file from the output folder
+        outputfolder = CONFIG('outputs');
+        filename = [outputfolder '/' project '/' sim '/rpinput'];
+    end
     
     clean0 = fileread(filename); % read text file into character array
     clean1 = regexprep(clean0, ',[\s]{0,}([A-Z]+)',',\n $1'); % insert appropriate newlines

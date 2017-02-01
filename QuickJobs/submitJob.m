@@ -1,4 +1,4 @@
-function [] = submitJob(project, simname, timelimit, tasks, RAM)
+function [chnl] = submitJob(project, simname, timelimit, tasks, RAM, chnl, close)
     
     % Submit a job to the cluster
     % Author: Carl A. Lindstrom (Uni. Oslo, 25.08.2016)
@@ -13,8 +13,10 @@ function [] = submitJob(project, simname, timelimit, tasks, RAM)
     if ~exist('RAM','var'); RAM = 1024; end % [MB]
     
     % connect to host
-    disp(['Connecting to cluster: ' CONFIG('host')]);
-    chnl = sshfrommatlab(CONFIG('username'), CONFIG('host'), CONFIG('password'));
+    if ~exist('chnl','var')
+        disp(['Connecting to cluster: ' CONFIG('host')]);
+        chnl = sshfrommatlab(CONFIG('username'), CONFIG('host'), CONFIG('password'));
+    end
     
     % get QuickPIC and binary folders
     qpfolder = CONFIG('qpfolder');
@@ -47,11 +49,21 @@ function [] = submitJob(project, simname, timelimit, tasks, RAM)
     
     % copy QuickPIC executable
     disp('Copying QuickPIC executable.');
-    sshfrommatlabissue(chnl, ['cp ' binfolder '/qpic.e ' simfolder]); 
+    rp = rpinputParser('','',true);
+    if rp.plasma{1}.type==71 % needs a special qpic.e-file
+        sshfrommatlabissue(chnl, ['cp ' binfolder '/qpic.e.hca ' simfolder '/qpic.e']); 
+    else % just a normal one
+        sshfrommatlabissue(chnl, ['cp ' binfolder '/qpic.e ' simfolder]); 
+    end
+    
+    % is express job?
+    enableExpress = true; % disable/enable express queueing
+    isExpressJob = enableExpress && timelimit <= 2 && tasks <= 8;
+    highPri = false; % high priority queue 
     
     % make job file (define hours and cores)
     disp('Making the job file (locally).');
-    jobfilepath = jobfileMaker(project, simname, timelimit, tasks, RAM);
+    jobfilepath = jobfileMaker(project, simname, timelimit, tasks, RAM, highPri);
     rpinputpath = [tempfilesfolder '/rpinput'];
     
     % send job and rpinput file
@@ -62,8 +74,7 @@ function [] = submitJob(project, simname, timelimit, tasks, RAM)
     
     % submit job
     disp('Submitting the job:');
-    enableExpress = true; % disable/enable express queueing
-    if enableExpress && timelimit <= 2 && tasks <= 8
+    if isExpressJob
         subcmd = ['qsub -l express ' simfolder '/qpic.e.cmd'];
         disp('Running express job.');
     else
@@ -77,9 +88,11 @@ function [] = submitJob(project, simname, timelimit, tasks, RAM)
     disp(' ');
     
     % close connection to host
-    sshfrommatlabclose(chnl);
-    disp(' ')
-    disp('Connection closed.')
+    if ~exist('chnl','var') || (exist('close','var') && close)
+        sshfrommatlabclose(chnl);
+        disp(' ')
+        disp('Connection closed.')
+    end
     
 end
 

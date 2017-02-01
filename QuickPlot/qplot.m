@@ -1,15 +1,17 @@
-function [] = qplot(project, sim, data, steps, ROIs)
+function [] = qplot(project, sim, steps, data, ROIs)
 
-    % qplot(project, sim, {{field, projection}, {...}}, {xlims, ylims, zlims})
+    %% PLOTS QuickPIC SIMULATIONS
+
+    % USAGE:
+    % qplot(project, sim, steps, {{field, proj}, {...}}, {xlims, ylims, zlims})
     
     % field: 'EX', 'EY', 'EZ', 'ER', 'ETH' for E-FIELDS in (x/y/z/r/theta)
-    %       'BX', 'BY', 'BZ', 'BR', 'BTH' for B-FIELDS in (x/y/z/r/theta)
-    %       'FX', 'FY', 'FZ', 'FR', 'FTH' for FORCES in (x/y/z/r/theta)
-    %       'QB' for BEAM DENSITY (all beams)
-    %       'QP' for PLASMA DENSITY (all plasmas)
-    %       'Q' for PLASMA + DEAM DENSITY
-    % phase space: 'A_B' where A, B can be (X/Y/Z/XP/YP/E) => underscore
-    %                                                 gives phase space
+    %         'BX', 'BY', 'BZ', 'BR', 'BTH' for B-FIELDS in (x/y/z/r/theta)
+    %         'FX', 'FY', 'FZ', 'FR', 'FTH' for FORCES in (x/y/z/r/theta)
+    %         'QB' for BEAM DENSITY (all beams)
+    %         'QP' for PLASMA DENSITY (all plasmas)
+    %         'Q' for PLASMA + DEAM DENSITY
+    % phase_space: 'A_B' where A, B can be (X/Y/Z/XP/YP/E) => underscore gives phase space
     
     % proj: 'XY', 'XZ', 'YZ' for slice plots 
     %       'XYZ' for 3D combo slice plot
@@ -31,26 +33,18 @@ function [] = qplot(project, sim, data, steps, ROIs)
     
     %% GET CONFIG
     addpath('..');
-    outputfolder = CONFIG('outputs');
     
     
     %% GET INPUT PARAMETERS
     rp = rpinputParser(project, sim);
-    Nspecies = numel(rp.plasma);
     
     % plasma parameters
     omega_p = sqrt(rp.n0 * SI_e^2/(SI_me*SI_eps0));
     
     %% DEFINE AXES
     
-    % labels
-    [axlbl.X, axlbl.Y, axlbl.Z] = deal('x [\mum]', 'y [\mum]', 'z [\mum]');
-    [axlbl.XP, axlbl.YP, axlbl.E] = deal('x'' [\murad]', 'y'' [\murad]', 'E [GeV]');
-    
-    % axes and offsets
-    axes.X = linspace(-rp.sim.dim.x/2, rp.sim.dim.x/2, 2^rp.sim.ind.x);
-    axes.Y = linspace(-rp.sim.dim.y/2, rp.sim.dim.y/2, 2^rp.sim.ind.y);
-    axes.Z = linspace(-rp.beam{1}.offset.z, rp.sim.dim.z-rp.beam{1}.offset.z, 2^rp.sim.ind.z);
+    % axes and labels
+    [axes, axlbl] = qaxes( project, sim );
     
     % find ROIs (or set to default)
     if ~( exist('ROIs','var') && numel(ROIs)>=1 && ~isempty(ROIs{1}) )
@@ -84,55 +78,6 @@ function [] = qplot(project, sim, data, steps, ROIs)
     dump.plasma.X = (rp.dump.slice.plasma.x + min(axes.X));
     dump.plasma.Y = (rp.dump.slice.plasma.y + min(axes.Y));
     dump.plasma.Z = (rp.dump.slice.plasma.z + min(axes.Z));
-    
-    
-    %% EXTRACT FIELDS AND DENSITIES
-    
-    % function to extract all fields and densities 
-    % (can be optimized by only extracting fields needed)    
-    function qp = extract(step)
-        
-        % extraction helper function
-        simpath = [outputfolder '/' project '/' sim];
-        geth5 = @(var) h5read([simpath '/' var '/' var '_' num2str(step,'%04d') '.h5']);
-        
-        % find available projections
-        for proj = {'XY','XZ','YZ'}
-            
-            % fields
-            for field = {'E','B'}
-                for dim = {'X','Y','Z'}
-                    % skip if no folders exist
-                    if numel(dir([simpath '/F' field{:} dim{:} '-' proj{:}]))>0
-                        qp.(field{:}).(dim{:}).(proj{:}) = geth5(['F' field{:} dim{:} '-' proj{:}]);
-                    end
-                end
-            end
-
-            % plasmas
-            for species = 1:Nspecies
-                Q = geth5(['QEP' num2str(species) '-' proj{:}]);
-                if species == 1 % first species
-                    qp.Q.P.(proj{:}) = Q;
-                else % otherwise add
-                    qp.Q.P.(proj{:}) = qp.Q.P.(proj{:}) + Q;
-                end
-            end
-
-            % beams
-            qp.Q.B.(proj{:}) = geth5(['QEB-' proj{:}]);
-
-            % both (beams + plasma)
-            qp.Q.total.(proj{:}) = qp.Q.B.(proj{:}) + qp.Q.P.(proj{:});
-        end
-        
-        % phase space
-        qp.Q.total.phase = readBeams(simpath, step, rp); % all beams
-        
-        % add forces and fields in polar coordinates
-        [qp.E, qp.B, qp.F] = polarFields(axes.X, axes.X, qp.E, qp.B);
-    end
-    
 
     %% PLOT HELPER FUNCTIONS
     
@@ -419,9 +364,9 @@ function [] = qplot(project, sim, data, steps, ROIs)
             % find distance travelled
             s = rp.sim.time.step * step / omega_p * SI_c; % [m]
             
-            % get data 
+            % get data
             try 
-                qp = extract(step);
+                qp = qextract(project, sim, step);
             catch
                 disp(['Cannot get data for step ' num2str(step) '.']);
                 continue; % (skip if non-existant)
@@ -473,7 +418,7 @@ function [] = qplot(project, sim, data, steps, ROIs)
                     phaseSpacePlot(Nrows, Ncols, i, xdir, ydir, s, cmn, cmx);
                 end
             end
-
+            
             animationPause();
         end
         onceFlag = false;
@@ -484,5 +429,5 @@ function [] = qplot(project, sim, data, steps, ROIs)
         hlink = linkprop(ax3D, 'View');
         setappdata(gcf, 'link3D', hlink);
     end
-    
+
 end

@@ -18,6 +18,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
     
     % plasmas = {{'uni', [s,n], res}, {...}}
     %           {{'hc', [r1,r2,n], [s,n], res}, {...}}
+    %           {{'hca', [r1,r2,n,dtheta,theta0], [s,n], res}, {...}}
     %           {{'cyl', [r1,n], [s,n], res}, {...}}
     %           {{'arb', [r,n], [s,n], res}, {...}}
     % NOTE: n is relative to n0
@@ -55,6 +56,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         disp('                                       {''arb'', file}');
         disp('plasmas = {{''uni'', [s n], res}, {...}}');
         disp('           {''hc'', [r1 r2 n], [s n], res}');
+        disp('           {''hca'', [r1 r2 n dtheta theta0], [s n], res}');
         disp('           {''cyl'', [r1 n], [s n], res}');
         disp('           {''arb'', [r n], [s n], res}');
         disp('dumps = {slice, phasespace}');
@@ -116,8 +118,8 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
             case 'bi'
                 rp.beam{i}.params{2} = [beam{5}{2}, size(beam{5}{3},1)]; % sigmas and size of z-profile
                 rp.beam{i}.params{3} = [beam{4}, rp.beam{i}.espread, zeros(1,6)]; % emittance, E-spread and centroids
-                rp.beam{i}.params{4} = beam{5}{3}(:,2); % z-profile f(z)
-                rp.beam{i}.params{5} = beam{5}{3}(:,1); % z-profile zs
+                rp.beam{i}.params{4} = beam{5}{3}(:,2)'; % z-profile f(z)
+                rp.beam{i}.params{5} = beam{5}{3}(:,1)'; % z-profile zs
                 if numel(beam{5}) > 3 && beam{5}{4} % routine
                     rp.beam{i}.routine = 3;
                     rp.beam{i}.rand = 1;
@@ -160,11 +162,11 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         else
             rp.beam{i}.quiet = true; % default: true
         end
-        % beam resolution (macroparticles in x,y,z) : (256,256,256)
+        % beam resolution (macroparticles in x,y,z)
         if numel(beam) > 8
             rp.beam{i}.res = struct('x', beam{9}(1), 'y', beam{9}(2), 'z', beam{9}(3));
         else
-            rp.beam{i}.res = struct('x', 256, 'y', 256, 'z', 256); % default: true
+            rp.beam{i}.res = struct('x', 256, 'y', 256, 'z', 256); % default: (256,256,256)
         end
         
         fprintf('> N = %G, gamma = %g, charge = %+d, \n', rp.beam{i}.N, rp.beam{i}.gamma, rp.beam{i}.charge);
@@ -193,7 +195,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         
         rp.plasma{i}.r = struct('args', [0,0,0], 'ns', 0, 'rs', 0); % defaults r-args and profile
         rp.plasma{i}.z = struct('enable', false, 'ns', 0, 'ss', 0); % long. profile?
-        rp.plasma{i}.res = 2048; % default resolution (per dimension)
+        rp.plasma{i}.res = 2048*2; % default resolution (per dimension)
         
         switch plasma{1}
             case 'uni'
@@ -213,6 +215,17 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
                 else
                     rp.plasma{i}.r.args = [plasma{2}(1), 1, plasma{2}(2)]; % default relative density : 1
                 end
+                if numel(plasma) > 2
+                    rp.plasma{i}.z.enable = true;
+                    rp.plasma{i}.z.ss = plasma{3}(:,1)'; % long. profile ss
+                    rp.plasma{i}.z.ns = plasma{3}(:,2)'; % long. profile ns
+                end
+                if numel(plasma) > 3
+                    rp.plasma{i}.res = plasma{4}; % resolution
+                end
+            case 'hca' % asymmetric hollow channel
+                rp.plasma{i}.type = 71; % type
+                rp.plasma{i}.r.args = [plasma{2}(1), plasma{2}(3), plasma{2}(2), plasma{2}(4), plasma{2}(5)];
                 if numel(plasma) > 2
                     rp.plasma{i}.z.enable = true;
                     rp.plasma{i}.z.ss = plasma{3}(:,1)'; % long. profile ss
@@ -254,13 +267,15 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
             case 'uni'
                 fprintf('> Uniform plasma, ');
             case 'hc'
-                fprintf('> Hollow channel, r1 = %g um, r2 = %g um, rel. density = %g, ', rp.plasma{i}.r.args(1), rp.plasma{i}.r.args(3), rp.plasma{i}.r.args(2));
+                fprintf('> Hollow channel, r1 = %g um, r2 = %g um, rel. dens. = %g, ', rp.plasma{i}.r.args(1), rp.plasma{i}.r.args(3), rp.plasma{i}.r.args(2));
+            case 'hca'
+                fprintf('> Asym. hollow channel, r1-r2 = %g-%g um, rel. dens. = %g, dtheta = %g deg, theta0 = %g deg, ', rp.plasma{i}.r.args(1), rp.plasma{i}.r.args(3), rp.plasma{i}.r.args(2),rp.plasma{i}.r.args(4),rp.plasma{i}.r.args(5));
             case 'cyl'
-                fprintf('> Cylindrical, r = %g um, rel. density = %g, ', rp.plasma{i}.r.args(1), rp.plasma{i}.r.args(2));
+                fprintf('> Cylindrical, r = %g um, rel. dens. = %g, ', rp.plasma{i}.r.args(1), rp.plasma{i}.r.args(2));
             case 'arb'
                 fprintf('> Piece-wise profile, %d-part radial profile, ', numel(rp.plasma{i}.r.rs));
         end
-        fprintf('1D-resolution = %d, z-profile = %s', rp.plasma{i}.res, bool2str(rp.plasma{i}.z.enable));
+        fprintf('1D-res. = %d, z-prof. = %s', rp.plasma{i}.res, bool2str(rp.plasma{i}.z.enable));
         if rp.plasma{i}.z.enable
             fprintf(' (%d-part profile)', numel(rp.plasma{i}.z.ss));
         end
@@ -459,7 +474,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         t{7} = 1; % [m_e] particle mass (1 = electron/positron)
         t(10:12) = {0, 0, 0}; % [c] drift velocities (Lorentz betas) in {x, y, z}
         t{37} = bool2str(false); % radiation damping?
-        t{2} = 1e7; % minimum number of beam particles
+        t{2} = 5e6; % minimum number of beam particles
         
         % auto-generated:
         t{19} = numel(rp.beam{i}.params{2}); % size of Init Array 2 
@@ -497,6 +512,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
     
     %% PART 4 (loop): PLASMA SPECIES (19 inputs)
     template{4} = fileread([templatesfolder '/rpinput_template_4.txt']);
+    template{6} = fileread([templatesfolder '/rpinput_template_4_hca.txt']);
     
     for i = 1:Nspecies
         
@@ -527,10 +543,17 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         t{17} = numel(rp.plasma{i}.z.ns); % number of long. profile points
 
         % write Part 4 to file
-        t = cellfun(num2strG, t, 'UniformOutput', false);
-        fprintf(fID, template{4}, t{1},  t{2},  t{3},  t{4},  t{5},  t{6},  t{7},  t{8},  t{9},  t{10}, ...
-                                  t{11}, t{12}, t{13}, t{14}, t{15}, t{16}, t{17}, t{18}, t{19});
-    
+        if rp.plasma{i}.type == 71 % if asymmetric hollow channel plasma
+            t{20} = rp.plasma{i}.r.args(4);
+            t{21} = rp.plasma{i}.r.args(5);
+            t = cellfun(num2strG, t, 'UniformOutput', false);
+            fprintf(fID, template{6}, t{1},  t{2},  t{3},  t{4},  t{5},  t{6},  t{7},  t{8},  t{9},  t{10}, ...
+                                      t{11}, t{12}, t{13}, t{14}, t{15}, t{16}, t{17}, t{18}, t{19}, t{20}, t{21});
+        else % if all other plasmas
+            t = cellfun(num2strG, t, 'UniformOutput', false);
+            fprintf(fID, template{4}, t{1},  t{2},  t{3},  t{4},  t{5},  t{6},  t{7},  t{8},  t{9},  t{10}, ...
+                                      t{11}, t{12}, t{13}, t{14}, t{15}, t{16}, t{17}, t{18}, t{19});
+        end
     end
     
     

@@ -7,3 +7,8 @@ figures/
 
 QuickJobs/tempfiles/rpinput
 QuickJobs/tempfiles/qpic.e.cmd
+plot_scripts
+scan_scripts
+publication
+
+QuickPlot/qproj.m

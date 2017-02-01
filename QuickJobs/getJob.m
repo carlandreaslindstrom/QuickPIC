@@ -51,6 +51,11 @@ function [] = getJob(project, simname)
         disp('Done');
         disp('Deleting the compressed file locally.');
         system(['rm -r ' tarpath_local]);
+        
+        % delete tarball on cluster
+        fprintf('Deleting compressed file on cluster... ');
+        sshfrommatlabissue(chnl, ['rm -r ' tarpath]);
+        disp('Done');
     
     end
     
