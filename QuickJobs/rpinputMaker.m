@@ -195,12 +195,12 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         
         rp.plasma{i}.r = struct('args', [0,0,0], 'ns', 0, 'rs', 0); % defaults r-args and profile
         rp.plasma{i}.z = struct('enable', false, 'ns', 0, 'ss', 0); % long. profile?
-        rp.plasma{i}.res = 2048*2; % default resolution (per dimension)
+        rp.plasma{i}.res = 4096; % default resolution (per dimension)
         
         switch plasma{1}
             case 'uni'
                 rp.plasma{i}.type = 0; % type
-                if numel(plasma) > 1
+                if numel(plasma) > 1 && numel(plasma{2}) > 0
                     rp.plasma{i}.z.enable = true;
                     rp.plasma{i}.z.ss = plasma{2}(:,1)'; % long. profile ss
                     rp.plasma{i}.z.ns = plasma{2}(:,2)'; % long. profile ns
@@ -215,7 +215,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
                 else
                     rp.plasma{i}.r.args = [plasma{2}(1), 1, plasma{2}(2)]; % default relative density : 1
                 end
-                if numel(plasma) > 2
+                if numel(plasma) > 2 && numel(plasma{3}) > 0
                     rp.plasma{i}.z.enable = true;
                     rp.plasma{i}.z.ss = plasma{3}(:,1)'; % long. profile ss
                     rp.plasma{i}.z.ns = plasma{3}(:,2)'; % long. profile ns
@@ -226,7 +226,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
             case 'hca' % asymmetric hollow channel
                 rp.plasma{i}.type = 71; % type
                 rp.plasma{i}.r.args = [plasma{2}(1), plasma{2}(3), plasma{2}(2), plasma{2}(4), plasma{2}(5)];
-                if numel(plasma) > 2
+                if numel(plasma) > 2 && numel(plasma{3}) > 0
                     rp.plasma{i}.z.enable = true;
                     rp.plasma{i}.z.ss = plasma{3}(:,1)'; % long. profile ss
                     rp.plasma{i}.z.ns = plasma{3}(:,2)'; % long. profile ns
@@ -241,7 +241,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
                 else
                     rp.plasma{i}.r.args = [plasma{2}(1),1,0]; % default relative density : 1
                 end
-                if numel(plasma) > 2
+                if numel(plasma) > 2 && numel(plasma{3}) > 0
                     rp.plasma{i}.z.enable = true;
                     rp.plasma{i}.z.ss = plasma{3}(:,1)'; % long. profile ss
                     rp.plasma{i}.z.ns = plasma{3}(:,2)'; % long. profile ns
@@ -253,7 +253,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
                 rp.plasma{i}.type = 21; % type
                 rp.plasma{i}.r.rs = plasma{2}(:,1)'; % radial profile ss
                 rp.plasma{i}.r.ns = plasma{2}(:,2)'; % radial profile ns
-                if numel(plasma) > 2
+                if numel(plasma) > 2 && numel(plasma{3}) > 0
                     rp.plasma{i}.z.enable = true;
                     rp.plasma{i}.z.ss = plasma{3}(:,1)'; % long. profile ss
                     rp.plasma{i}.z.ns = plasma{3}(:,2)'; % long. profile ns
@@ -474,7 +474,7 @@ function rp = rpinputMaker( beams, n0, plasmas, z_end, Nsteps, dims, dumps, ress
         t{7} = 1; % [m_e] particle mass (1 = electron/positron)
         t(10:12) = {0, 0, 0}; % [c] drift velocities (Lorentz betas) in {x, y, z}
         t{37} = bool2str(false); % radiation damping?
-        t{2} = 5e6; % minimum number of beam particles
+        t{2} = num2str(1e7); % minimum number of beam particles
         
         % auto-generated:
         t{19} = numel(rp.beam{i}.params{2}); % size of Init Array 2 

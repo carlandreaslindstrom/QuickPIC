@@ -48,7 +48,7 @@ function [ qp ] = qextract( project, sim, step )
     qp.Q.total.phase = readBeams(simpath, step, rp); % all beams
 
     % add forces and fields in polar coordinates
-    [qp.E, qp.B, qp.F] = polarFields(axes.X, axes.X, qp.E, qp.B);
+    [qp.E, qp.B, qp.F, qp.G] = polarFields(axes.X, axes.X, qp.E, qp.B);
 
 end
 

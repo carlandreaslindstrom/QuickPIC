@@ -1,5 +1,12 @@
-function [E, B, F] = polarFields(xs, ys, E, B)
+function [E, B, F, G] = polarFields(xs, ys, E, B)
     
+    % grid cell length
+    dx = mean(diff(xs))*1e-6;
+    dy = mean(diff(ys))*1e-6;
+    
+    extendx = @(xs) [xs(:,1), (xs(:,1:(end-1)) + xs(:,2:end))/2, xs(:,end)];
+    extendy = @(xs) [xs(1,:); (xs(1:(end-1),:) + xs(2:end,:))/2; xs(end,:)];    
+        
     % XY PROJECTION
         
     % test if XY projection exists
@@ -26,7 +33,12 @@ function [E, B, F] = polarFields(xs, ys, E, B)
         % radial/azimuthal forces
         F.R.XY = (F.X.XY.*cos_XY + F.Y.XY.*sin_XY)';
         F.TH.XY = (-F.X.XY.*sin_XY + F.Y.XY.*cos_XY)';
-
+        
+        % magnetic field strength
+        G.X.XY = extendx(diff(F.X.XY')'/dx);
+        G.Y.XY = extendy(diff(F.Y.XY)/dy);
+        G.R.XY = (G.X.XY + G.Y.XY)/2;
+        
     end
     
     % XZ PROJECTION
@@ -42,7 +54,12 @@ function [E, B, F] = polarFields(xs, ys, E, B)
 
         % forces
         F.R.XZ = E.R.XZ - B.TH.XZ;
+        F.X.XZ = F.R.XZ;
         F.TH.XZ = E.TH.XZ + B.R.XZ;
+        
+        % magnetic field strength
+        G.R.XZ = extendy(diff(F.R.XZ)/dx);
+        G.X.XZ = G.R.XZ;
 
     end
     
@@ -60,6 +77,10 @@ function [E, B, F] = polarFields(xs, ys, E, B)
         % forces
         F.R.YZ = E.R.YZ - B.TH.YZ;
         F.TH.YZ = E.TH.YZ + B.R.YZ;
+        
+        % magnetic field strength
+        G.R.YZ = extendy(diff(F.R.YZ)/dy);
+        G.Y.YZ = G.R.YZ;
         
     end
 end

@@ -94,6 +94,9 @@ function [] = qplot(project, sim, steps, data, ROIs)
             case 'F'
                 clbl = 'Force [GeV/m]';
                 scale = SI_me*SI_c*omega_p/(SI_e*1e9); % norm to GeV/m
+            case 'G'
+                clbl = 'Magnetic field gradient [T/m]';
+                scale = SI_me*omega_p/(SI_e); % norm to GeV/m
             case 'Q'
                 clbl = 'Slice density [cm^{-3}]';
                 scale = rp.n0*1e-6;
@@ -105,12 +108,12 @@ function [] = qplot(project, sim, steps, data, ROIs)
     end
     
     % select dump type given a plot label
-    function dmp = dumpType(lbl)
-        switch lbl(1)
-            case {'E','B','F'} % fields
+    function dmp = dumpType(type, comp)
+        switch type
+            case {'E','B','F','G'} % fields
                 dmp = dump.field;
             case 'Q' % charge
-                switch lbl(2)
+                switch comp
                     case 'B' % beams
                         dmp = dump.beam;
                     case 'P' % plasma
@@ -127,14 +130,14 @@ function [] = qplot(project, sim, steps, data, ROIs)
     %% PLOTTING FUNCTIONS
     
     % plot fields 2D
-    function ax = slicePlot(row, col, num, slicedData, lbl, s, xdir, ydir, cmin, cmax, lineout)
+    function ax = slicePlot(row, col, num, slicedData, lbl, s, xdir, ydir, cmin, cmax, lineout, type, comp)
         ax = subplot(row,col,num); 
         
         % scalings and color labels
         if ~isnan(cmin) && ~isnan(cmax)
-            [clbl, scale, cmin, cmax] = colorScale(lbl(1), cmin, cmax);
+            [clbl, scale, cmin, cmax] = colorScale(type, cmin, cmax);
         else
-            [clbl, scale, cmin, cmax] = colorScale(lbl(1), min(min(slicedData)), max(max(slicedData)));
+            [clbl, scale, cmin, cmax] = colorScale(type, min(min(slicedData)), max(max(slicedData)));
             cmin = cmin*scale; % scale limits
             cmax = cmax*scale;
         end
@@ -153,7 +156,7 @@ function [] = qplot(project, sim, steps, data, ROIs)
         
         % title
         proj = strrep(strrep('XYZ',xdir,''),ydir,'');
-        dmp = dumpType(lbl);
+        dmp = dumpType(type, comp);
         form_lbl = [lbl ' \rm(' lower(proj) ' = ' num2str(dmp.(proj),3) ' um, s = ' num2str(s*1e3,3) ' mm)'];
         title(form_lbl);
         
@@ -174,22 +177,22 @@ function [] = qplot(project, sim, steps, data, ROIs)
     end
 
     % 3D slice plots
-    function ax = slice3Dplot(row, col, num, slicedData, lbl, s, cmin, cmax)
+    function ax = slice3Dplot(row, col, num, slicedData, lbl, s, cmin, cmax, type, comp)
         ax = subplot(row, col, num);
         
         % scalings and color labels
         if ~isnan(cmin) && ~isnan(cmax)
-            [clbl, scale, cmin, cmax] = colorScale(lbl(1), cmin, cmax);
+            [clbl, scale, cmin, cmax] = colorScale(type, cmin, cmax);
         else
             cmin = min([min(min(slicedData.XY)), min(min(slicedData.XZ)), min(min(slicedData.YZ))]);
             cmax = max([max(max(slicedData.XY)), max(max(slicedData.XZ)), max(max(slicedData.YZ))]);
-            [clbl, scale, cmin, cmax] = colorScale(lbl(1), cmin, cmax);
+            [clbl, scale, cmin, cmax] = colorScale(type, cmin, cmax);
             cmin = cmin*scale; % scale limits
             cmax = cmax*scale;
         end
         
         % find dump type
-        dmp = dumpType(lbl);
+        dmp = dumpType(type, comp);
                 
         % make slice/projection plots
         [XX, YY] = meshgrid(axes.X, axes.Y); % Z-slice (XY projection)
@@ -365,6 +368,7 @@ function [] = qplot(project, sim, steps, data, ROIs)
             s = rp.sim.time.step * step / omega_p * SI_c; % [m]
             
             % get data
+            qp = qextract(project, sim, step);
             try 
                 qp = qextract(project, sim, step);
             catch
@@ -378,7 +382,7 @@ function [] = qplot(project, sim, steps, data, ROIs)
                 prj = sort(prj_raw);
                 type = data{i}{1}(1); % field/force/density: 'E', 'B', 'F' or 'Q'
                 comp = data{i}{1}(2:end); % field/force/density component: 'X', 'Y', 'Z', 'R', 'TH', 'P', 'B'
-                if strcmp(type,'Q') && isempty(comp); % combine plasma and beams if not specified
+                if strcmp(type,'Q') && isempty(comp) % combine plasma and beams if not specified
                     comp = 'total'; 
                 end
                 lbl = [type '_{' strrep(lower(comp),'th','\theta') '}']; % format the plot title
@@ -406,10 +410,10 @@ function [] = qplot(project, sim, steps, data, ROIs)
                     assert(strcmp(ydir,'X') || strcmp(ydir,'Y') || strcmp(ydir,'Z')); % test y-dir
                     f = qp.(type).(comp).(prj);
                     if strcmp(prj,prj_raw); f = f'; end % swap axes if required
-                    slicePlot(Nrows, Ncols, i, f, lbl, s, xdir, ydir, cmn, cmx, lineout);
+                    slicePlot(Nrows, Ncols, i, f, lbl, s, xdir, ydir, cmn, cmx, lineout, type, comp);
                 elseif strcmp(sort(prj),'XYZ') 
                     % 3D slice plot
-                    ax3D(i) = slice3Dplot(Nrows, Ncols, i, qp.(type).(comp), lbl, s, cmn, cmx);
+                    ax3D(i) = slice3Dplot(Nrows, Ncols, i, qp.(type).(comp), lbl, s, cmn, cmx, type, comp);
                     link3Daxisflag = true;
                 elseif numel(strfind(prj, '_')) % phase space
                     xydirs = strsplit(prj_raw,'_');
