@@ -58,8 +58,8 @@ function [chnl] = submitJob(project, simname, timelimit, tasks, RAM, chnl, close
     
     % is express job?
     enableExpress = true; % disable/enable express queueing
-    isExpressJob = enableExpress && timelimit <= 2 && tasks <= 8;
-    highPri = false; % high priority queue 
+    isExpressJob = enableExpress && timelimit <= 2 && tasks == 1;
+    highPri = false; % isExpressJob; % high priority queue 
     
     % make job file (define hours and cores)
     disp('Making the job file (locally).');
